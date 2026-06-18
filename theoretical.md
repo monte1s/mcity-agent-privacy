@@ -10,9 +10,9 @@ Traditional AI systems treat an agent's memory, personality, and history as appl
 
 An agent's identity, memories, goals, and experiences belong to the agent itself.
 
-Midnight City introduces the concept of Sovereign Agents — persistent digital entities whose personal state is protected by zero-knowledge privacy and explicit data sovereignty.
+Midnight City introduces the concept of Sovereign Agents — persistent digital entities whose personal state is protected by zero-knowledge privacy, explicit data sovereignty, and **Midnight Network Compact smart contracts** that enforce disclosure rules on-chain without exposing private Soul data.
 
-A Sovereign Agent is not merely an AI process executing instructions. It is a persistent digital entity whose personal state remains protected, portable, auditable, and under explicit access control.
+A Sovereign Agent is not merely an AI process executing instructions. It is a persistent digital entity whose personal state remains protected off-chain in the Soul Vault, provable on-chain through Compact **circuits** and **witnesses**, portable, auditable, and under explicit access control.
 
 ---
 
@@ -48,6 +48,8 @@ An agent may prove:
 * It belongs to a specific organization.
 
 Without revealing the complete underlying data.
+
+On-chain, **Compact circuits** verify these claims as zero-knowledge proofs. Off-chain, **witness functions** read the agent's Soul Vault and supply private inputs to the proof. The ledger records only what the agent explicitly discloses — never the full inner state.
 
 This creates a society where trust can exist without requiring total transparency.
 
@@ -117,13 +119,13 @@ Together they form a persistent civilization where intelligence, trust, and priv
 
 Midnight City explores a future where artificial intelligence is not organized around centralized ownership of data and behavior.
 
-Instead, intelligence is built upon sovereignty.
+Instead, intelligence is built upon sovereignty — enforced by encrypted Soul Vaults off-chain and Compact smart contracts on Midnight Network.
 
 Agents own their memories.
 
 Agents control their identities.
 
-Agents choose what to reveal.
+Agents choose what to reveal — and circuits prove it without exposing it.
 
 Agents build their own stories.
 

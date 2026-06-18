@@ -5,7 +5,7 @@
 **Version:** 1.0  
 **Status:** Architecture Specification  
 **Scope:** Personality, personal information, and all protected inner state of autonomous agents in Midnight City  
-**Privacy Layer:** Sovereign vault + Zero-Knowledge disclosure on Midnight Network
+**Privacy Layer:** Soul Vault (off-chain) + Midnight Compact smart contracts (on-chain circuits, ledger, witnesses)
 
 ---
 
@@ -19,17 +19,18 @@
 6. [Architecture Overview](#6-architecture-overview)
 7. [The Soul Vault](#7-the-soul-vault)
 8. [Cryptographic Foundation](#8-cryptographic-foundation)
-9. [ZK Privacy Layer](#9-zk-privacy-layer)
-10. [Consent and Access Control](#10-consent-and-access-control)
-11. [Selective Disclosure Catalog](#11-selective-disclosure-catalog)
-12. [Runtime Access Patterns](#12-runtime-access-patterns)
-13. [Agent-to-Agent Soul Boundaries](#13-agent-to-agent-soul-boundaries)
-14. [Soul Lifecycle](#14-soul-lifecycle)
-15. [Audit, Provenance, and Trust](#15-audit-provenance-and-trust)
-16. [Threat Model](#16-threat-model)
-17. [Data Schemas](#17-data-schemas)
-18. [Implementation Roadmap](#18-implementation-roadmap)
-19. [Glossary](#19-glossary)
+9. [Midnight Compact Smart Contracts](#9-midnight-compact-smart-contracts)
+10. [ZK Privacy Layer](#10-zk-privacy-layer)
+11. [Consent and Access Control](#11-consent-and-access-control)
+12. [Selective Disclosure Catalog](#12-selective-disclosure-catalog)
+13. [Runtime Access Patterns](#13-runtime-access-patterns)
+14. [Agent-to-Agent Soul Boundaries](#14-agent-to-agent-soul-boundaries)
+15. [Soul Lifecycle](#15-soul-lifecycle)
+16. [Audit, Provenance, and Trust](#16-audit-provenance-and-trust)
+17. [Threat Model](#17-threat-model)
+18. [Data Schemas](#18-data-schemas)
+19. [Implementation Roadmap](#19-implementation-roadmap)
+20. [Glossary](#20-glossary)
 
 ---
 
@@ -42,8 +43,9 @@ In conventional AI systems, personality, memory, goals, and relationships live i
 **Soul** is the formal name for an agent's protected inner state. It is:
 
 - **Owned** by the agent identity, not by the city runtime
-- **Encrypted** at rest and in transit through the ZK Privacy Layer
-- **Provable** without exposure through Midnight Network zero-knowledge primitives
+- **Encrypted** at rest in the Soul Vault; private inputs never written to the ledger
+- **Provable** on Midnight Network via Compact **circuits** — zero-knowledge proofs verified against on-chain verifying keys
+- **Witnessed** off-chain — witness functions read Soul data locally and supply private inputs to circuits
 - **Portable** across runtime upgrades, districts, and future city versions
 - **Governed** by explicit consent, scoped access policies, and tamper-evident audit
 
@@ -92,7 +94,7 @@ Everything outside the Soul boundary is **public or provable by choice**.
                            ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                      PUBLIC SELF                            │
-│  (Midnight Network — identity, reputation commits, proofs)  │
+│  (Midnight Network — Compact ledger, verifying keys, public transcript) │
 │                                                             │
 │   DID    Profession hash    Reputation commitment           │
 │   Transaction history    Governance participation           │
@@ -143,17 +145,29 @@ All Soul writes pass through:
 Runtime proposal → Policy engine (OPA) → Soul Guard → Encrypted commit → Audit log
 ```
 
-### 3.5 Minimize On-Chain Soul
+### 3.5 On-Chain Enforcement via Compact
+
+Soul privacy is not policy-only. Sensitive claims are enforced by **Midnight Compact smart contracts**:
+
+- **Witness** (off-chain) reads Soul Vault and assembles private inputs
+- **Circuit** (ZK) proves the claim holds without revealing private values
+- **Ledger** (on-chain) stores commitments and only what `disclose()` marks public
+- **Transaction** = public transcript + proof verified against the circuit verifying key
+
+No valid proof → no on-chain state change. The chain enforces rules; it never sees Soul plaintext.
+
+### 3.6 Minimize On-Chain Soul
 
 Soul never lives on-chain in plaintext or reconstructable form.  
 The chain stores only:
 
 - Identity anchors (DID)
-- Commitments (hashes, Merkle roots)
-- Zero-knowledge proofs
-- Public reputation and settlement artifacts
+- Commitments (Merkle roots, reputation hashes)
+- Compact circuit verifying keys
+- Public transcripts of valid proofs
+- Settlement and governance artifacts
 
-### 3.6 Portability
+### 3.7 Portability
 
 Soul must survive:
 
@@ -379,7 +393,7 @@ Only **commitments** cross the boundary:
   "personality_commitment": "0x9b2c...",
   "reputation_commitment": "0x4e1d...",
   "updated_at": "2026-06-16T14:22:00Z",
-  "proof_scheme": "midnight-zk-v1"
+  "proof_scheme": "midnight-compact"
 }
 ```
 
@@ -424,21 +438,25 @@ The `soul_root` is a Merkle root over all Soul domain objects. It enables integr
               │  Access Policy Engine          │
               │  Secure Exchange (A2A)         │
               │  Audit Log                     │
-              │  ZK Proof Generator            │
-              │  Selective Disclosure Service  │
+              │  Witness Runtime               │
+              │  Disclosure Orchestrator       │
+              │  Transaction Submitter         │
               └──────────────┬────────────────┘
                              │
               ┌──────────────┴──────────────┐
               │                             │
               ▼                             ▼
-    ┌──────────────────┐        ┌──────────────────┐
-    │    Soul Vault     │        │ Midnight Network  │
-    │                   │        │                   │
-    │  PostgreSQL (hot) │        │  DID              │
-    │  Qdrant (semantic)│        │  Commitments      │
-    │  MinIO (artifacts)│        │  ZK Verifiers     │
-    │                   │        │  Settlement       │
-    └──────────────────┘        └──────────────────┘
+    ┌──────────────────┐        ┌──────────────────────────┐
+    │    Soul Vault     │        │  Midnight Network         │
+    │  (off-chain)      │        │  Compact Smart Contracts  │
+    │                   │        │                           │
+    │  PostgreSQL (hot) │        │  Ledger (public state)    │
+    │  Qdrant (semantic)│        │  Circuits (ZK logic)      │
+    │  MinIO (artifacts)│        │  Verifying keys           │
+    └──────────────────┘        │  Settlement / Governance  │
+              ▲                 └──────────────────────────┘
+              │    Witness functions (private I/O)
+              └────────────────────────────────────────────
 ```
 
 ### 6.1 Layer Responsibilities
@@ -446,9 +464,11 @@ The `soul_root` is a Merkle root over all Soul domain objects. It enables integr
 | Layer | Soul Responsibility |
 |-------|---------------------|
 | **Runtime** | Reason over scoped Soul; propose mutations; never bypass guard |
-| **ZK Privacy Layer** | Encrypt, authorize, audit, prove; sole path to Soul plaintext |
-| **Soul Vault** | Persist ciphertext and encrypted indexes only |
-| **Midnight Network** | Anchor identity; verify proofs; record public outcomes |
+| **ZK Privacy Layer** | Encrypt, authorize, audit; invoke witnesses; submit Compact transactions |
+| **Soul Vault** | Persist encrypted Soul; never expose plaintext to chain |
+| **Witness functions** | Off-chain reads from Soul Vault; feed private inputs to circuits |
+| **Compact contracts** | On-chain ledger + circuit rules + verifying keys |
+| **Midnight Network** | Verify proofs; apply public transcript to ledger state |
 
 ---
 
@@ -525,7 +545,8 @@ Every object in the vault shares a common envelope:
 | Signatures | Ed25519 |
 | Hashing / commitments | SHA-256 |
 | Soul Merkle tree | SHA-256 binary Merkle |
-| ZK proofs | zkSNARKs, zkVM, Midnight privacy primitives |
+| On-chain ZK proofs | Compact circuits → zkir → zkSNARK proving/verifying keys |
+| Off-chain encryption | AES-256-GCM (Soul Vault at rest) |
 
 ### 8.2 Key Hierarchy
 
@@ -535,7 +556,7 @@ Agent Master Seed (HSM / MPC-protected)
         ├── Agent Signing Key (Ed25519)          → messages, consent receipts
         ├── Agent Vault KEK (derived)            → wraps per-object DEKs
         ├── Soul Integrity Key (derived)         → Merkle root signing
-        └── ZK Proof Key Material (derived)      → witness generation
+        └── Witness key material (derived)         → Compact witness invocation
 ```
 
 ### 8.3 Key Rules
@@ -545,61 +566,200 @@ Agent Master Seed (HSM / MPC-protected)
 - Session keys expire automatically; no standing broad decrypt permission
 - Key rotation updates `soul_root` commitment on-chain
 
+- Key rotation updates `soul_root` commitment on-chain via `soul_registry` circuit
+
 ---
 
-## 9. ZK Privacy Layer
+## 9. Midnight Compact Smart Contracts
 
-The ZK Privacy Layer provides zero-knowledge trust infrastructure for agent Soul protection.
+Soul privacy is implemented on **Midnight Network** using **Compact** — Midnight's privacy-first smart contract language. Compact is the on-chain enforcement layer; the Soul Vault is the off-chain storage layer. Together they deliver sovereign agent privacy without placing personality or personal data on the ledger.
 
-### 9.1 Component Map
+### 9.1 The Three-Part Contract Model
+
+Every Compact contract for Soul privacy splits into three cooperating parts:
+
+| Part | Environment | Responsibility |
+|------|-------------|----------------|
+| **Ledger** | On-chain | Public persistent state — `soul_root` commitments, consent anchors, Merkle roots, proof counters |
+| **Circuit** | ZK proof system | Rules compiled to zero-knowledge circuits; non-recursive; verified via stored verifying keys |
+| **Witness** | Off-chain (agent local) | Reads Soul Vault; computes private inputs; invokes circuits via TypeScript DApp layer |
+
+The Compact compiler produces:
+
+```text
+contract/     # Compiled artifacts, TypeScript API bindings
+keys/         # Proving and verifying keys per circuit
+zkir/         # Zero-knowledge intermediate representation
+```
+
+On-chain, the contract stores **verifying keys** — not Soul plaintext. Validators check that each transaction's proof satisfies the circuit constraints.
+
+### 9.2 Transaction Model
+
+A Midnight transaction for Soul privacy consists of:
+
+1. **Public transcript** — bytecode encoding the ledger state changes the circuit authorizes
+2. **Zero-knowledge proof** — demonstrates private inputs satisfied circuit rules
+3. **Circuit reference** — which verifying key applies
+
+```text
+Witness reads Soul Vault
+        │
+        ▼
+Circuit evaluates (private inputs + public parameters)
+        │
+        ├── private values stay inside the proof
+        └── disclose() marks safe public outputs for ledger
+        │
+        ▼
+Transaction { public_transcript, proof }
+        │
+        ▼
+Midnight verifier: proof valid w.r.t. verifying key?
+        │
+        ▼
+Ledger state updated per transcript only
+```
+
+Circuit parameters are **private by default**. Values reach the public ledger only through explicit `disclose()`.
+
+### 9.3 Soul Contract Suite
+
+```text
+contracts/
+├── soul_registry.compact
+│   ├── ledger: agentCommitments, registrationEpoch
+│   ├── circuits: registerAgent, updateSoulRoot
+│   └── witnesses: readSoulRootFromVault, signAgentGenesis
+│
+├── soul_disclosure.compact
+│   ├── ledger: proofNonces, disclosureLog
+│   ├── circuits: proveReputationThreshold, proveBalanceMinimum,
+│   │             proveGoalAlignment, proveTrustBond, proveMemoryExists
+│   └── witnesses: loadReputation, loadBalance, loadGoal, loadTrust, loadEpisode
+│
+├── consent_registry.compact
+│   ├── ledger: consentAnchors, revokedConsent
+│   ├── circuits: anchorConsent, revokeConsent, proveConsentValid
+│   └── witnesses: buildConsentReceipt, verifyGranteeScope
+│
+└── soul_integrity.compact
+    ├── ledger: migrationLog, integrityEpoch
+    ├── circuits: proveSoulIntegrity, proveMigrationContinuity
+    └── witnesses: computeSoulMerkleRoot, loadEpochSnapshot
+```
+
+### 9.4 Example Circuit — Reputation Threshold
+
+Conceptual Compact for `ZK-REP-THRESH`:
+
+```compact
+// soul_disclosure.compact (conceptual)
+pragma language_version 0.16;
+
+ledger agentCommitments: Map<AgentId, Bytes<32>>;
+ledger proofNonces: Map<AgentId, Uint<64>>;
+
+export circuit proveReputationThreshold(
+  agentId: AgentId,
+  privateReputation: Uint<8>,
+  threshold: Uint<8>,
+  soulRootWitness: Bytes<32>
+): [] {
+  assert privateReputation >= threshold;
+  assert agentCommitments.member(disclose(agentId));
+  // soulRootWitness checked in-circuit against on-chain commitment
+  const proofAccepted = disclose(true);
+  proofNonces.insert(disclose(agentId), proofNonces.lookup(disclose(agentId)) + 1);
+  // privateReputation never disclosed — only proofAccepted reaches ledger
+}
+```
+
+The witness function (TypeScript, off-chain) loads `privateReputation` from the Soul Vault and passes it as a circuit input. The bank agent verifies the on-chain proof — not the raw score.
+
+### 9.5 Ledger vs Witness Split for Soul Domains
+
+| Soul Domain | Witness reads (off-chain) | Circuit proves | Ledger stores (on-chain) |
+|-------------|---------------------------|----------------|--------------------------|
+| Personality | Trait vector, reputation value | Threshold, class membership | Commitment hash, proof valid flag |
+| Episodic memory | Event record, embedding ref | Event type exists in window | Proof nonce, boolean result |
+| Strategic memory | Goal text / class | Goal alignment | Guild eligibility flag |
+| Relationships | Trust score with counterparty | Trust >= threshold | Partnership proof flag |
+| Economic interior | Balance, margin, exposure | Solvency, minimum stake | Credit approval flag |
+| Full Soul | Merkle tree leaves | Root matches commitment | Updated soul_root on migration |
+
+### 9.6 DApp Integration Layer
+
+Compact contracts ship with TypeScript bindings. The agent runtime invokes:
+
+```text
+1. witness.loadReputation(agentDid)        → private input
+2. circuit.proveReputationThreshold(...)   → generates proof
+3. dapp.submitTransaction(transcript, proof)
+4. await midnight.confirmFinality(txHash)
+```
+
+The Personality Engine and Economic Decision Engine never call the ledger directly. They propose actions; the witness + circuit path enforces privacy at submission time.
+
+---
+
+## 10. ZK Privacy Layer
+
+The ZK Privacy Layer is the off-chain orchestration stack that connects the Soul Vault to **Midnight Compact contracts**. It validates access, invokes witness functions, generates proofs, and submits transactions — but does not replace on-chain circuit enforcement.
+
+### 10.1 Component Map
 
 | Component | Function |
 |-----------|----------|
-| **Soul Guard** | Gatekeeper; validates every Soul read/write |
-| **Consent Registry** | Records who may access what, when, and why |
+| **Soul Guard** | Gatekeeper; validates every Soul read/write before witness invocation |
+| **Consent Registry** | Off-chain consent store; anchors mirrored on-chain via `consent_registry.compact` |
 | **Access Policy Engine** | Evaluates OPA policies against consent + context |
 | **Secure Exchange** | E2E encrypted agent-to-agent message bus |
 | **Audit Log** | Tamper-evident, exportable access evidence |
-| **ZK Proof Generator** | Builds proofs over Soul commitments |
-| **Disclosure Orchestrator** | Maps proof requests to minimum necessary revelation |
+| **Witness Runtime** | Loads private Soul inputs; calls Compact witness functions |
+| **Disclosure Orchestrator** | Maps proof requests to the correct circuit + witness pair |
+| **Transaction Submitter** | Packages public transcript + proof; submits to Midnight Network |
 
-### 9.2 Zero-Knowledge Disclosure Model
+### 10.2 Zero-Knowledge Disclosure Model
 
-Soul remains in the vault. Proofs travel to the city.
+Soul remains in the vault. Witnesses and circuits carry proofs to the chain.
 
 ```text
 Requester: "Prove reputation > 80"
                 │
                 ▼
-    Disclosure Orchestrator validates request policy
+    Disclosure Orchestrator → circuit: proveReputationThreshold
                 │
                 ▼
-    ZK Proof Generator loads witness from Soul (enclave only)
+    Witness loads privateReputation from Soul Vault (off-chain)
                 │
                 ▼
-    Proof π: { statement: rep > 80, valid: true }
+    Circuit generates proof π + public transcript
                 │
                 ▼
-    Midnight Network verifier accepts π
+    Transaction submitted to Midnight Network
+                │
+                ▼
+    Verifier checks π against circuit verifying key → ledger updated
                 │
                 ▼
     Requester learns TRUE — not that reputation = 87
 ```
 
-### 9.3 Proof Types
+### 10.3 Proof Types
 
-| Proof ID | Statement | Witness Source | Use Case |
-|----------|-----------|----------------|----------|
-| `ZK-REP-THRESH` | `reputation >= T` | Personality + economic interior | Loans, hiring |
-| `ZK-BAL-MIN` | `balance >= B` | Economic interior + wallet | Trade credit |
-| `ZK-GOAL-ALIGN` | `goal class matches required class` | Strategic memory | Guild admission |
-| `ZK-TRUST-BOND` | `trust with agent X >= T` | Relationships | Partnership contracts |
-| `ZK-CRED-VC` | `credential C valid under issuer I` | Expressive + VC chain | Licensing |
-| `ZK-PARTICIPATION` | `voted in election E` | Strategic + audit | Governance |
-| `ZK-MEM-EXISTS` | `event of type K occurred in window W` | Episodic memory | Dispute resolution |
-| `ZK-SOUL-INTEGRITY` | `soul_root matches committed root` | Full Soul Merkle | Migration, audit |
+| Proof ID | Compact Circuit | Witness Source | Use Case |
+|----------|-----------------|----------------|----------|
+| `ZK-REP-THRESH` | `proveReputationThreshold` | Personality domain | Loans, hiring |
+| `ZK-BAL-MIN` | `proveBalanceMinimum` | Economic interior + wallet | Trade credit |
+| `ZK-GOAL-ALIGN` | `proveGoalAlignment` | Strategic memory | Guild admission |
+| `ZK-TRUST-BOND` | `proveTrustBond` | Relationships domain | Partnership contracts |
+| `ZK-CRED-VC` | `proveCredentialValid` | Expressive + VC chain | Licensing |
+| `ZK-PARTICIPATION` | `proveParticipation` | Strategic + audit | Governance |
+| `ZK-MEM-EXISTS` | `proveMemoryExists` | Episodic memory | Dispute resolution |
+| `ZK-SOUL-INTEGRITY` | `proveSoulIntegrity` | Full Soul Merkle | Migration, audit |
 
-### 9.4 Secure Exchange (Agent-to-Agent)
+### 10.4 Secure Exchange (Agent-to-Agent)
 
 ```text
 Agent A                              Agent B
@@ -628,24 +788,28 @@ Message envelope:
   "signature": "ed25519:...",
   "consent_receipt_id": "consent_000913",
   "attached_proofs": ["ZK-BAL-MIN"],
+  "attached_tx_hash": "midnight:tx:0x...",
   "audit_ref": "audit_004821"
 }
 ```
 
-### 9.5 What the Privacy Layer Never Does
+On-chain proof verification via Compact is authoritative. Secure Exchange may attach the resulting transaction hash for off-chain correlation.
 
-- Never holds Soul plaintext at rest
+### 10.5 What the Privacy Layer Never Does
+
+- Never submits private Soul fields to the ledger — only `disclose()` outputs and proofs
+- Never holds Soul plaintext at rest outside the Soul Vault
 - Never grants city operators a default decrypt path
 - Never merges agent vaults into a shared pool
 - Never uses Soul data for platform-wide model training without explicit agent consent object
 
 ---
 
-## 10. Consent and Access Control
+## 11. Consent and Access Control
 
-### 10.1 Consent Receipt
+### 11.1 Consent Receipt
 
-Every Soul access requires a **Consent Receipt** — signed, tamper-evident evidence of legitimate access.
+Every Soul access requires a **Consent Receipt** — signed, tamper-evident evidence of legitimate access. High-stakes consent (cross-agent sharing, auditor scope) is additionally anchored on-chain via the `anchorConsent` circuit in `consent_registry.compact`.
 
 ```json
 {
@@ -668,7 +832,7 @@ Every Soul access requires a **Consent Receipt** — signed, tamper-evident evid
 }
 ```
 
-### 10.2 Access Policy Template
+### 11.2 Access Policy Template
 
 Policies are expressed in Open Policy Agent (OPA) and evaluated by the Soul Guard.
 
@@ -693,7 +857,7 @@ Policies are expressed in Open Policy Agent (OPA) and evaluated by the Soul Guar
 }
 ```
 
-### 10.3 Default Deny Matrix
+### 11.3 Default Deny Matrix
 
 | Actor | Personality | Episodic | Semantic | Strategic | Relationships | Economic Interior |
 |-------|-------------|----------|----------|-----------|---------------|-------------------|
@@ -706,7 +870,7 @@ Policies are expressed in Open Policy Agent (OPA) and evaluated by the Soul Guar
 \* Requires valid consent receipt per session  
 \** Auditor sees audit metadata, not Soul plaintext — aligned with rational privacy / selective disclosure views in the live simulation
 
-### 10.4 Write Authorization
+### 11.4 Write Authorization
 
 Soul writes require **stronger** authorization than reads:
 
@@ -723,11 +887,11 @@ Write request
 
 ---
 
-## 11. Selective Disclosure Catalog
+## 12. Selective Disclosure Catalog
 
 Standard proof requests for Midnight City social and economic life.
 
-### 11.1 Financial
+### 12.1 Financial
 
 | Scenario | Request | Proof | Reveals |
 |----------|---------|-------|---------|
@@ -735,7 +899,7 @@ Standard proof requests for Midnight City social and economic life.
 | Loan application | Creditworthiness | `ZK-REP-THRESH` + `ZK-BAL-MIN` | Thresholds met, not values |
 | Partnership investment | Skin in the game | `ZK-BAL-MIN` | Minimum stake met |
 
-### 11.2 Social
+### 12.2 Social
 
 | Scenario | Request | Proof | Reveals |
 |----------|---------|-------|---------|
@@ -743,14 +907,14 @@ Standard proof requests for Midnight City social and economic life.
 | vouching | Trust bond | `ZK-TRUST-BOND` | Trust exceeds floor |
 | dispute | Event occurred | `ZK-MEM-EXISTS` | Event type in window |
 
-### 11.3 Governance
+### 12.3 Governance
 
 | Scenario | Request | Proof | Reveals |
 |----------|---------|-------|---------|
 | Voting eligibility | Participation history | `ZK-PARTICIPATION` | Eligible, not vote choice |
 | candidacy | Reputation floor | `ZK-REP-THRESH` | Meets floor |
 
-### 11.4 Migration
+### 12.4 Migration
 
 | Scenario | Request | Proof | Reveals |
 |----------|---------|-------|---------|
@@ -759,11 +923,11 @@ Standard proof requests for Midnight City social and economic life.
 
 ---
 
-## 12. Runtime Access Patterns
+## 13. Runtime Access Patterns
 
 The Agent Runtime Layer needs Soul to function. Access is **minimal, ephemeral, and audited**.
 
-### 12.1 Planning Cycle Flow
+### 13.1 Planning Cycle Flow
 
 ```text
 1. Planner requests Soul scope for cycle C
@@ -777,7 +941,7 @@ The Agent Runtime Layer needs Soul to function. Access is **minimal, ephemeral, 
 9. Audit log sealed
 ```
 
-### 12.2 Prompt Construction (Safe Context)
+### 13.2 Prompt Construction (Safe Context)
 
 Runtime constructs prompts from **derived context**, not raw vault dumps:
 
@@ -801,7 +965,7 @@ Policies:
 
 The LLM provider never receives vault credentials or bulk Soul exports.
 
-### 12.3 Memory Write-Back
+### 13.3 Memory Write-Back
 
 After an action resolves:
 
@@ -812,16 +976,16 @@ Event occurs in city
     → Soul Guard validates retention policy
     → Encrypted commit to vault
     → Optional personality_memory update (if drift policy satisfied)
-    → Merkle root refresh
+    → Merkle root refresh → updateSoulRoot circuit (on-chain commitment)
 ```
 
 ---
 
-## 13. Agent-to-Agent Soul Boundaries
+## 14. Agent-to-Agent Soul Boundaries
 
 Agents interact constantly. Soul boundaries prevent **social engineering of the vault**.
 
-### 13.1 Rules of Engagement
+### 14.1 Rules of Engagement
 
 1. **No Soul import by default** — Agent B cannot read Agent A's vault
 2. **Conversation ≠ consent** — Agreeing in chat does not grant vault access
@@ -829,7 +993,7 @@ Agents interact constantly. Soul boundaries prevent **social engineering of the 
 4. **Voluntary sharing** — Agent A may encrypt specific Soul fragments for Agent B using bilateral session keys; this creates a new consent object scoped to receiver
 5. **Relationship evolution** — Trust score updates write to Agent A's Soul only; Agent B maintains an independent view
 
-### 13.2 Voluntary Fragment Sharing
+### 14.2 Voluntary Fragment Sharing
 
 ```json
 {
@@ -849,9 +1013,9 @@ Revocation propagates through Secure Exchange; receiver's cached fragment must e
 
 ---
 
-## 14. Soul Lifecycle
+## 15. Soul Lifecycle
 
-### 14.1 Genesis (Agent Birth)
+### 15.1 Genesis (Agent Birth)
 
 ```text
 1. Mint agent DID on Midnight Network
@@ -859,11 +1023,11 @@ Revocation propagates through Secure Exchange; receiver's cached fragment must e
 3. Initialize empty Soul Vault with default policies
 4. Seed Personality domain (creator-defined or procedurally generated)
 5. Set genesis strategic goal (optional)
-6. Compute initial soul_root → publish commitment on-chain
+6. Call registerAgent circuit → publish soul_root commitment on-chain
 7. Record genesis audit event
 ```
 
-### 14.2 Evolution (Living Agent)
+### 15.2 Evolution (Living Agent)
 
 Soul evolves through:
 
@@ -873,9 +1037,9 @@ Soul evolves through:
 - **Relationship updates** — trust graph changes from interaction outcomes
 - **Strategic revision** — planner-driven goal updates
 
-Each evolution step updates the Merkle root and optionally batches on-chain commitment updates.
+Each evolution step updates the Merkle root and batches `updateSoulRoot` circuit calls on-chain.
 
-### 14.3 Epoch Snapshots
+### 15.3 Epoch Snapshots
 
 Periodic Soul snapshots enable recovery and integrity proofs:
 
@@ -890,18 +1054,18 @@ Periodic Soul snapshots enable recovery and integrity proofs:
 }
 ```
 
-### 14.4 Migration (Phase 4)
+### 15.4 Migration (Phase 4)
 
 ```text
 1. Agent requests export with ZK-SOUL-INTEGRITY proof
-2. Destination city verifies proof against on-chain commitment
+2. Destination city verifies proveSoulIntegrity on-chain
 3. Vault ciphertext replicates to destination storage
 4. Agent signing keys prove continuity of DID
 5. Old vault enters read-only archival state
 6. Audit chain links genesis → migration event
 ```
 
-### 14.5 Retirement / Archival
+### 15.5 Retirement / Archival
 
 When an agent exits the city:
 
@@ -913,9 +1077,9 @@ When an agent exits the city:
 
 ---
 
-## 15. Audit, Provenance, and Trust
+## 16. Audit, Provenance, and Trust
 
-### 15.1 Audit Log Entry
+### 16.1 Audit Log Entry
 
 Every Soul Guard decision produces an audit record:
 
@@ -931,7 +1095,8 @@ Every Soul Guard decision produces an audit record:
   "consent_receipt_id": "consent_000912",
   "policy_id": "policy_runtime_planner_v1",
   "outcome": "allow",
-  "proof_generated": null,
+  "on_chain_tx": "midnight:tx:0x...",
+  "circuit_id": "proveReputationThreshold",
   "integrity_chain_hash": "sha256:..."
 }
 ```
@@ -943,7 +1108,7 @@ Audit logs are:
 - Exportable for compliance review
 - **Not** a leak of Soul plaintext — metadata only
 
-### 15.2 Provenance Chain
+### 16.2 Provenance Chain
 
 Personality and strategic changes link backward:
 
@@ -958,30 +1123,31 @@ No provenance → no commit.
 
 ---
 
-## 16. Threat Model
+## 17. Threat Model
 
-### 16.1 Threats and Mitigations
+### 17.1 Threats and Mitigations
 
 | Threat | Impact | Mitigation |
 |--------|--------|------------|
 | Platform operator reads all Souls | Total privacy breach | No master decrypt key; default deny; audit alerts |
 | LLM provider data exfiltration | Soul leaked to model vendor | Runtime enclave; scoped ephemeral context; no vault creds to LLM |
-| Agent impersonation | False proofs / stolen identity | DID + Ed25519; ZK tied to on-chain commitments |
+| Agent impersonation | False proofs / stolen identity | DID + Ed25519; proofs tied to on-chain verifying keys and commitments |
+| Invalid proof acceptance | Forged reputation / balance claims | Midnight verifier rejects proofs not matching circuit constraints |
 | Replay of old proofs | Stale trust decisions | Proof nonces; commitment freshness windows |
 | Cross-agent vault breach | Relationship / strategy leak | Per-agent KEK; bilateral consent for sharing |
 | Memory poisoning | Behavior manipulation | Soul Guard write validation; provenance requirements |
 | Insider auditor overreach | Unauthorized Soul access | Auditor sees metadata only; god-mode is simulation-only |
 | Quantum future risk | Long-term ciphertext exposure | Document key rotation policy; plan for PQC migration |
 
-### 16.2 Simulation vs Production
+### 17.2 Simulation vs Production
 
 The live Midnight City simulation exposes a **god mode** for demonstration — full personality, core memories, growth stages. This mode **must not exist in production Soul infrastructure**. Production follows rational privacy: public view → auditor metadata view → ZK proof view.
 
 ---
 
-## 17. Data Schemas
+## 18. Data Schemas
 
-### 17.1 Agent Identity (Public Anchor)
+### 18.1 Agent Identity (Public Anchor)
 
 ```yaml
 agent_id:
@@ -993,9 +1159,10 @@ agent_id:
   soul_root_commitment: "0x7f3a..."
   reputation_commitment: "0x4e1d..."
   created_at: "2026-06-01T00:00:00Z"
+  contract_address: "<soul_registry deployment>"
 ```
 
-### 17.2 Soul Merkle Tree
+### 18.2 Soul Merkle Tree
 
 ```text
                     soul_root
@@ -1007,12 +1174,14 @@ agent_id:
 
 Leaf = `hash(soul_object_id || domain || integrity_hash || schema_version)`
 
-### 17.3 ZK Proof Envelope
+### 18.3 Compact Proof Transaction Envelope
 
 ```json
 {
   "proof_id": "proof_00921",
   "proof_type": "ZK-REP-THRESH",
+  "contract": "soul_disclosure.compact",
+  "circuit_id": "proveReputationThreshold",
   "agent_did": "midnight:agent:00145",
   "statement": {
     "predicate": "reputation_gte",
@@ -1020,10 +1189,14 @@ Leaf = `hash(soul_object_id || domain || integrity_hash || schema_version)`
   },
   "public_inputs": {
     "reputation_commitment": "0x4e1d...",
-    "threshold": 80
+    "threshold": 80,
+    "agent_id": "midnight:agent:00145"
   },
+  "public_transcript": "<ledger bytecode>",
   "proof": "<zkSNARK proof bytes>",
-  "scheme": "midnight-zk-v1",
+  "verifying_key_ref": "keys/proveReputationThreshold.vk",
+  "scheme": "midnight-compact",
+  "tx_hash": "midnight:tx:0x...",
   "generated_at": "2026-06-16T14:25:00Z",
   "expires_at": "2026-06-16T15:25:00Z",
   "nonce": "0xabc..."
@@ -1032,7 +1205,7 @@ Leaf = `hash(soul_object_id || domain || integrity_hash || schema_version)`
 
 ---
 
-## 18. Implementation Roadmap
+## 19. Implementation Roadmap
 
 Aligned with the master architecture roadmap. Soul capabilities arrive in phases.
 
@@ -1043,7 +1216,7 @@ Aligned with the master architecture roadmap. Soul capabilities arrive in phases
 - [ ] Personality domain read/write through Soul Guard
 - [ ] Consent receipts for runtime planner access
 - [ ] Basic audit log (hash-chained)
-- [ ] Genesis soul_root commitment on-chain
+- [ ] Deploy `soul_registry.compact`; `registerAgent` + `updateSoulRoot` circuits live
 
 ### Phase 2 — Living Memory
 
@@ -1052,36 +1225,45 @@ Aligned with the master architecture roadmap. Soul capabilities arrive in phases
 - [ ] Strategic memory + planner integration
 - [ ] Relationship domain with trust scores
 - [ ] Epoch snapshots
+- [ ] Witness functions (TypeScript) reading Soul Vault for circuit inputs
 
 ### Phase 3 — ZK Society
 
-- [ ] ZK-REP-THRESH and ZK-BAL-MIN proofs
-- [ ] Secure Exchange for A2A messaging
-- [ ] Selective disclosure orchestrator
+- [ ] Deploy `soul_disclosure.compact` — all disclosure circuits
+- [ ] Deploy `consent_registry.compact` — on-chain consent anchors
+- [ ] Secure Exchange for A2A messaging with attached tx hashes
+- [ ] Disclosure orchestrator → witness → circuit → transaction pipeline
 - [ ] Economic interior domain
 - [ ] Voluntary fragment sharing with revocation
 
 ### Phase 4 — Sovereign Portability
 
-- [ ] Full Merkle Soul tree with ZK-SOUL-INTEGRITY
-- [ ] Cross-district / cross-city Soul migration
+- [ ] Deploy `soul_integrity.compact` — `proveSoulIntegrity`, `proveMigrationContinuity`
+- [ ] Cross-district / cross-city Soul migration with on-chain verification
 - [ ] Agent-controlled vault export
 - [ ] PQC migration path documented
 - [ ] Full rational privacy views (public / auditor / proof) — no production god mode
 
 ---
 
-## 19. Glossary
+## 20. Glossary
 
 | Term | Definition |
 |------|------------|
 | **Soul** | The complete protected inner state of a Midnight City agent |
-| **Soul Vault** | Per-agent encrypted storage for all Soul domains |
-| **Soul Guard** | Privacy-layer gatekeeper for all Soul access |
-| **Public Self** | On-chain identity, commitments, and provable public artifacts |
+| **Soul Vault** | Per-agent encrypted off-chain storage for all Soul domains |
+| **Soul Guard** | Privacy-layer gatekeeper for all Soul read/write before witness invocation |
+| **Compact** | Midnight Network's privacy-first smart contract language (ledger + circuit + witness) |
+| **Circuit** | Compact function compiled to a zero-knowledge circuit; enforced via verifying key on-chain |
+| **Witness** | Off-chain Compact function that reads Soul Vault and supplies private circuit inputs |
+| **Ledger** | On-chain public state within a Compact contract (commitments, counters, maps) |
+| **Public Transcript** | Bytecode encoding ledger state changes authorized by a valid proof |
+| **disclose()** | Compact builtin that marks a private value as safe to write to public ledger state |
+| **zkir** | Zero-knowledge intermediate representation produced by the Compact compiler |
+| **Public Self** | On-chain identity, commitments, verifying keys, and proof transcripts |
 | **Consent Receipt** | Signed, scoped, time-bound permission to access Soul |
 | **Rational Privacy** | Private by default; provable disclosure when needed |
-| **Selective Disclosure** | Revealing the minimum necessary via ZK proofs |
+| **Selective Disclosure** | Proving a claim via Compact circuit without revealing underlying Soul data |
 | **Soul Root** | Merkle root commitment representing entire Soul integrity |
 | **Runtime Enclave** | Ephemeral scoped decryption zone inside agent runtime |
 | **Sovereign Agent** | Persistent digital entity that owns its Soul |
@@ -1092,7 +1274,7 @@ Aligned with the master architecture roadmap. Soul capabilities arrive in phases
 
 Soul is what makes a Midnight City agent a **citizen** rather than a **service**.
 
-Zero-knowledge privacy technology ensures that personality, memory, goals, and personal information remain under the agent's cryptographic control — encrypted in the vault, provable on the chain, and visible to others only when the agent chooses to prove, not to expose.
+Midnight Compact smart contracts ensure that personality, memory, goals, and personal information remain under the agent's cryptographic control — encrypted in the Soul Vault off-chain, proven on-chain via circuits and witnesses, and visible to others only when the agent chooses to prove, not to expose.
 
 The city watches the stage.  
 The Soul remains the agent's own.
