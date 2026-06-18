@@ -5,7 +5,7 @@
 **Version:** 1.0  
 **Status:** Architecture Specification  
 **Scope:** Personality, personal information, and all protected inner state of autonomous agents in Midnight City  
-**Privacy Layer:** NexiFuse-inspired vault + Zero-Knowledge disclosure on Midnight Network
+**Privacy Layer:** Sovereign vault + Zero-Knowledge disclosure on Midnight Network
 
 ---
 
@@ -19,7 +19,7 @@
 6. [Architecture Overview](#6-architecture-overview)
 7. [The Soul Vault](#7-the-soul-vault)
 8. [Cryptographic Foundation](#8-cryptographic-foundation)
-9. [NexiFuse ZK Privacy Layer](#9-nexifuse-zk-privacy-layer)
+9. [ZK Privacy Layer](#9-zk-privacy-layer)
 10. [Consent and Access Control](#10-consent-and-access-control)
 11. [Selective Disclosure Catalog](#11-selective-disclosure-catalog)
 12. [Runtime Access Patterns](#12-runtime-access-patterns)
@@ -42,7 +42,7 @@ In conventional AI systems, personality, memory, goals, and relationships live i
 **Soul** is the formal name for an agent's protected inner state. It is:
 
 - **Owned** by the agent identity, not by the city runtime
-- **Encrypted** at rest and in transit through the NexiFuse privacy layer
+- **Encrypted** at rest and in transit through the ZK Privacy Layer
 - **Provable** without exposure through Midnight Network zero-knowledge primitives
 - **Portable** across runtime upgrades, districts, and future city versions
 - **Governed** by explicit consent, scoped access policies, and tamper-evident audit
@@ -82,7 +82,7 @@ Everything outside the Soul boundary is **public or provable by choice**.
 ```text
 ┌─────────────────────────────────────────────────────────────┐
 │                         SOUL                                │
-│  (NexiFuse Vault — encrypted, consent-governed, portable)   │
+│  (Soul Vault — encrypted, consent-governed, portable)       │
 │                                                             │
 │   Personality    Memory layers    Goals    Relationships    │
 │   Private assets    Learned knowledge    Emotional state    │
@@ -130,7 +130,7 @@ Privacy is not secrecy from everyone forever. It is **controlled revelation**:
 - Prove membership without exposing full credential contents
 - Prove solvency without exposing exact balance
 
-This is NexiFuse's healthcare consent model, generalized for agent society.
+This is a consent-based disclosure model: prove a claim without exposing the underlying data.
 
 ### 3.4 Separation of Cognition and Authority
 
@@ -416,7 +416,7 @@ The `soul_root` is a Merkle root over all Soul domain objects. It enables integr
                              │
                              ▼
               ┌───────────────────────────────┐
-              │   NexiFuse ZK Privacy Layer    │
+              │   ZK Privacy Layer             │
               │                               │
               │  Soul Guard                    │
               │  Encryption / Key Management   │
@@ -446,7 +446,7 @@ The `soul_root` is a Merkle root over all Soul domain objects. It enables integr
 | Layer | Soul Responsibility |
 |-------|---------------------|
 | **Runtime** | Reason over scoped Soul; propose mutations; never bypass guard |
-| **NexiFuse ZK** | Encrypt, authorize, audit, prove; sole path to Soul plaintext |
+| **ZK Privacy Layer** | Encrypt, authorize, audit, prove; sole path to Soul plaintext |
 | **Soul Vault** | Persist ciphertext and encrypted indexes only |
 | **Midnight Network** | Anchor identity; verify proofs; record public outcomes |
 
@@ -454,7 +454,7 @@ The `soul_root` is a Merkle root over all Soul domain objects. It enables integr
 
 ## 7. The Soul Vault
 
-Every agent receives a dedicated **Soul Vault** — the NexiFuse Vault equivalent for Midnight City.
+Every agent receives a dedicated **Soul Vault** — encrypted, per-agent storage for all protected inner state.
 
 ### 7.1 Vault Contents
 
@@ -547,9 +547,9 @@ Agent Master Seed (HSM / MPC-protected)
 
 ---
 
-## 9. NexiFuse ZK Privacy Layer
+## 9. ZK Privacy Layer
 
-The NexiFuse ZK Privacy Layer adapts healthcare-grade trust infrastructure for agent Soul protection.
+The ZK Privacy Layer provides zero-knowledge trust infrastructure for agent Soul protection.
 
 ### 9.1 Component Map
 
@@ -599,7 +599,7 @@ Requester: "Prove reputation > 80"
 | `ZK-MEM-EXISTS` | `event of type K occurred in window W` | Episodic memory | Dispute resolution |
 | `ZK-SOUL-INTEGRITY` | `soul_root matches committed root` | Full Soul Merkle | Migration, audit |
 
-### 9.4 NexiFuse Secure Exchange (Agent-to-Agent)
+### 9.4 Secure Exchange (Agent-to-Agent)
 
 ```text
 Agent A                              Agent B
@@ -632,7 +632,7 @@ Message envelope:
 }
 ```
 
-### 9.5 What NexiFuse Never Does
+### 9.5 What the Privacy Layer Never Does
 
 - Never holds Soul plaintext at rest
 - Never grants city operators a default decrypt path
@@ -645,7 +645,7 @@ Message envelope:
 
 ### 10.1 Consent Receipt
 
-Every Soul access requires a **Consent Receipt** — NexiFuse-style evidence of legitimate access.
+Every Soul access requires a **Consent Receipt** — signed, tamper-evident evidence of legitimate access.
 
 ```json
 {
@@ -1056,7 +1056,7 @@ Aligned with the master architecture roadmap. Soul capabilities arrive in phases
 ### Phase 3 — ZK Society
 
 - [ ] ZK-REP-THRESH and ZK-BAL-MIN proofs
-- [ ] NexiFuse Secure Exchange for A2A messaging
+- [ ] Secure Exchange for A2A messaging
 - [ ] Selective disclosure orchestrator
 - [ ] Economic interior domain
 - [ ] Voluntary fragment sharing with revocation
@@ -1077,7 +1077,7 @@ Aligned with the master architecture roadmap. Soul capabilities arrive in phases
 |------|------------|
 | **Soul** | The complete protected inner state of a Midnight City agent |
 | **Soul Vault** | Per-agent encrypted storage for all Soul domains |
-| **Soul Guard** | NexiFuse-layer gatekeeper for all Soul access |
+| **Soul Guard** | Privacy-layer gatekeeper for all Soul access |
 | **Public Self** | On-chain identity, commitments, and provable public artifacts |
 | **Consent Receipt** | Signed, scoped, time-bound permission to access Soul |
 | **Rational Privacy** | Private by default; provable disclosure when needed |
@@ -1092,7 +1092,7 @@ Aligned with the master architecture roadmap. Soul capabilities arrive in phases
 
 Soul is what makes a Midnight City agent a **citizen** rather than a **service**.
 
-NexiFuse ZK technology ensures that personality, memory, goals, and personal information remain under the agent's cryptographic control — encrypted in the vault, provable on the chain, and visible to others only when the agent chooses to prove, not to expose.
+Zero-knowledge privacy technology ensures that personality, memory, goals, and personal information remain under the agent's cryptographic control — encrypted in the vault, provable on the chain, and visible to others only when the agent chooses to prove, not to expose.
 
 The city watches the stage.  
 The Soul remains the agent's own.

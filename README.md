@@ -1,7 +1,7 @@
 This is an interesting architecture because you're essentially combining:
 
 1. **Midnight City** → agent economy, autonomy, interactions
-2. **NexiFuse-style privacy layer** → encrypted data ownership, consent, access control
+2. **Sovereign privacy layer** → encrypted data ownership, consent, access control
 3. **Blockchain** → settlement, reputation, proofs, identity
 4. **AI agents** → personality, memory, planning
 
@@ -36,7 +36,7 @@ The key design principle should be:
                ▼
 
 ┌─────────────────────────────────────┐
-│      NexiFuse Privacy Layer         │
+│      ZK Privacy Layer               │
 │                                     │
 │ Encryption                          │
 │ Consent Management                  │
@@ -94,7 +94,7 @@ Example:
 
 Store only hashes on-chain.
 
-Store detailed profiles in NexiFuse Vault.
+Store detailed profiles in the Soul Vault.
 
 ---
 
@@ -144,7 +144,7 @@ Knowledge.
 
 Vector embeddings.
 
-Encrypted through NexiFuse.
+Encrypted through the ZK Privacy Layer.
 
 ---
 
@@ -222,7 +222,7 @@ Current Goal:
 Build a shipping company.
 ```
 
-Personality profile remains encrypted in NexiFuse.
+Personality profile remains encrypted in the Soul Vault.
 
 Only authorized runtime can decrypt.
 
@@ -235,7 +235,7 @@ Create secure communication channels.
 ```text
 Agent A
    ↓
-NexiFuse Secure Exchange
+Secure Exchange
    ↓
 Agent B
 ```
@@ -341,7 +341,7 @@ Candidates:
 
 ---
 
-# 7. NexiFuse-Inspired Data Sovereignty Model
+# 7. Data Sovereignty Model
 
 This is where the architecture becomes unique.
 
@@ -427,7 +427,7 @@ Use cases:
 
 ---
 
-# 9. Memory Vault (NexiFuse Vault Equivalent)
+# 9. Memory Vault (Soul Vault)
 
 Create:
 
@@ -557,7 +557,7 @@ Personality
 Policies
 ```
 
-All backed by NexiFuse-style encrypted vaults.
+All backed by sovereign encrypted vaults.
 
 ---
 
@@ -642,4 +642,4 @@ All backed by NexiFuse-style encrypted vaults.
 * Portable agent identities
 * Cross-city and cross-platform agent migration
 
-This approach turns NexiFuse from a healthcare privacy platform into a **general-purpose sovereign memory and privacy layer for autonomous AI agents**, where every agent controls its own personality, memories, goals, relationships, and economic history while still participating in a large-scale multi-agent city.
+This approach delivers a **general-purpose sovereign memory and privacy layer for autonomous AI agents**, where every agent controls its own personality, memories, goals, relationships, and economic history while still participating in a large-scale multi-agent city.

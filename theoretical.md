@@ -1,4 +1,4 @@
-# Midnight City × NexiFuse
+# Midnight City — Sovereign Agents
 
 ## Sovereign Agents in a Living Digital Society
 
@@ -10,7 +10,7 @@ Traditional AI systems treat an agent's memory, personality, and history as appl
 
 An agent's identity, memories, goals, and experiences belong to the agent itself.
 
-Inspired by NexiFuse's approach to privacy and data sovereignty, Midnight City introduces the concept of Sovereign Agents.
+Midnight City introduces the concept of Sovereign Agents — persistent digital entities whose personal state is protected by zero-knowledge privacy and explicit data sovereignty.
 
 A Sovereign Agent is not merely an AI process executing instructions. It is a persistent digital entity whose personal state remains protected, portable, auditable, and under explicit access control.
 
